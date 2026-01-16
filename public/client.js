@@ -31,9 +31,40 @@ let maxFullness = 100;
 const MOVE_SPEED = 220;
 const MAX_ANGULAR_SPEED = 4.5;
 const CHOPSTICK_LENGTH = 80;
-const CONE_RADIUS = 70;
-const CONE_HALF_ANGLE = Math.PI / 7;
-const MOUTH_RADIUS = 18;
+const CONE_RADIUS = 90;
+const CONE_HALF_ANGLE = Math.PI / 5;
+const MOUTH_RADIUS = 22;
+
+const BODY_SIZE = 36;
+const MOUTH_SIZE = 44;
+const CHOPSTICK_WIDTH = 80;
+const CHOPSTICK_HEIGHT = 12;
+
+const PLAYER_TEXTURE_KEYS = {
+  left: {
+    body: "player_left_body",
+    chopstick: "player_left_chopstick",
+    mouth: "player_left_mouth"
+  },
+  right: {
+    body: "player_right_body",
+    chopstick: "player_right_chopstick",
+    mouth: "player_right_mouth"
+  }
+};
+
+const FOOD_VALUE_TO_KEY = new Map([
+  [4, "food_01"],
+  [6, "food_02"],
+  [8, "food_03"],
+  [10, "food_04"],
+  [12, "food_05"],
+  [14, "food_06"],
+  [16, "food_07"],
+  [18, "food_08"],
+  [20, "food_09"],
+  [22, "food_10"]
+]);
 
 function normalize(x, y) {
   const len = Math.hypot(x, y);
@@ -104,10 +135,25 @@ function connect() {
   });
 }
 
-function preload() {}
+function preload() {
+  this.load.image("player_left_body", "/assets/players/left_body.png");
+  this.load.image("player_right_body", "/assets/players/right_body.png");
+  this.load.image("player_left_chopstick", "/assets/players/left_chopstick.png");
+  this.load.image("player_right_chopstick", "/assets/players/right_chopstick.png");
+  this.load.image("player_left_mouth", "/assets/players/left_mouth.png");
+  this.load.image("player_right_mouth", "/assets/players/right_mouth.png");
+  for (let i = 1; i <= 10; i += 1) {
+    const id = String(i).padStart(2, "0");
+    this.load.image(`food_${id}`, `/assets/foods/food_${id}.png`);
+  }
+}
 
 function create() {
   this.graphics = this.add.graphics();
+  this.foodSprites = new Map();
+  this.playerSprites = new Map();
+  this.chopstickSprites = new Map();
+  this.mouthSprites = new Map();
   this.uiText = this.add.text(16, 80, "", {
     fontSize: "14px",
     color: "#f2e9d8"
@@ -219,36 +265,157 @@ function renderScene(scene, localPlayer, state) {
     return player;
   });
 
-  for (const player of players) {
-    const color = player.side === "left" ? 0x5aa9e6 : 0xf38ba0;
-    g.fillStyle(color, 1);
-    g.fillCircle(player.x, player.y, 18);
+  renderPlayers(scene, g, players);
 
-    const tip = tipPosition(player);
-    g.lineStyle(4, 0xf2e9d8, 1);
-    g.beginPath();
-    g.moveTo(player.x, player.y);
-    g.lineTo(tip.x, tip.y);
-    g.strokePath();
-
-    const mouth = mouthPosition(player);
-    g.lineStyle(2, 0xffd86b, 0.7);
-    g.strokeCircle(mouth.x, mouth.y, MOUTH_RADIUS);
-
-    drawCone(g, tip, player.angle, CONE_RADIUS, CONE_HALF_ANGLE, 0x4b7867);
-  }
-
-  for (const food of state.foods) {
-    let color = 0xf5d76e;
-    if (food.state === "held") {
-      const holder = players.find((p) => p.id === food.heldBy);
-      color = holder?.side === "left" ? 0x4fc3f7 : 0xff7043;
-    }
-    g.fillStyle(color, 1);
-    g.fillCircle(food.x, food.y, 10);
-  }
+  renderFoods(scene, g, players, state.foods);
 
   scene.uiText.setText(buildHud(players, state));
+}
+
+function renderFoods(scene, graphics, players, foods) {
+  const seen = new Set();
+  for (const food of foods) {
+    seen.add(food.id);
+    const textureKey = getFoodTextureKey(food.value);
+    if (scene.textures.exists(textureKey)) {
+      let sprite = scene.foodSprites.get(food.id);
+      if (!sprite) {
+        sprite = scene.add.image(food.x, food.y, textureKey);
+        sprite.setDisplaySize(22, 22);
+        sprite.setDepth(2);
+        scene.foodSprites.set(food.id, sprite);
+      } else if (sprite.texture.key !== textureKey) {
+        sprite.setTexture(textureKey);
+      }
+      sprite.setPosition(food.x, food.y);
+    } else {
+      const sprite = scene.foodSprites.get(food.id);
+      if (sprite) {
+        sprite.destroy();
+        scene.foodSprites.delete(food.id);
+      }
+      let color = 0xf5d76e;
+      if (food.state === "held") {
+        const holder = players.find((p) => p.id === food.heldBy);
+        color = holder?.side === "left" ? 0x4fc3f7 : 0xff7043;
+      }
+      graphics.fillStyle(color, 1);
+      graphics.fillCircle(food.x, food.y, 10);
+    }
+  }
+  for (const [id, sprite] of scene.foodSprites.entries()) {
+    if (!seen.has(id)) {
+      sprite.destroy();
+      scene.foodSprites.delete(id);
+    }
+  }
+}
+
+function renderPlayers(scene, graphics, players) {
+  const seen = new Set();
+  for (const player of players) {
+    seen.add(player.id);
+    const keys = PLAYER_TEXTURE_KEYS[player.side];
+    const bodyKey = keys?.body;
+    const chopstickKey = keys?.chopstick;
+    const mouthKey = keys?.mouth;
+    const hasBody = bodyKey && scene.textures.exists(bodyKey);
+    const hasChopstick = chopstickKey && scene.textures.exists(chopstickKey);
+    const hasMouth = mouthKey && scene.textures.exists(mouthKey);
+
+    if (hasBody) {
+      let body = scene.playerSprites.get(player.id);
+      if (!body) {
+        body = scene.add.image(player.x, player.y, bodyKey);
+        body.setDisplaySize(BODY_SIZE, BODY_SIZE);
+        body.setDepth(1);
+        scene.playerSprites.set(player.id, body);
+      } else if (body.texture.key !== bodyKey) {
+        body.setTexture(bodyKey);
+      }
+      body.setPosition(player.x, player.y);
+    } else {
+      const body = scene.playerSprites.get(player.id);
+      if (body) {
+        body.destroy();
+        scene.playerSprites.delete(player.id);
+      }
+      const color = player.side === "left" ? 0x5aa9e6 : 0xf38ba0;
+      graphics.fillStyle(color, 1);
+      graphics.fillCircle(player.x, player.y, 18);
+    }
+
+    if (hasChopstick) {
+      let chopstick = scene.chopstickSprites.get(player.id);
+      if (!chopstick) {
+        chopstick = scene.add.image(player.x, player.y, chopstickKey);
+        chopstick.setOrigin(0.1, 0.5);
+        chopstick.setDisplaySize(CHOPSTICK_WIDTH, CHOPSTICK_HEIGHT);
+        chopstick.setDepth(1);
+        scene.chopstickSprites.set(player.id, chopstick);
+      } else if (chopstick.texture.key !== chopstickKey) {
+        chopstick.setTexture(chopstickKey);
+      }
+      chopstick.setPosition(player.x, player.y);
+      chopstick.setRotation(player.angle);
+    } else {
+      const chopstick = scene.chopstickSprites.get(player.id);
+      if (chopstick) {
+        chopstick.destroy();
+        scene.chopstickSprites.delete(player.id);
+      }
+      const tip = tipPosition(player);
+      graphics.lineStyle(4, 0xf2e9d8, 1);
+      graphics.beginPath();
+      graphics.moveTo(player.x, player.y);
+      graphics.lineTo(tip.x, tip.y);
+      graphics.strokePath();
+    }
+
+    const mouth = mouthPosition(player);
+    if (hasMouth) {
+      let mouthSprite = scene.mouthSprites.get(player.id);
+      if (!mouthSprite) {
+        mouthSprite = scene.add.image(mouth.x, mouth.y, mouthKey);
+        mouthSprite.setDisplaySize(MOUTH_SIZE, MOUTH_SIZE);
+        mouthSprite.setDepth(1);
+        scene.mouthSprites.set(player.id, mouthSprite);
+      } else if (mouthSprite.texture.key !== mouthKey) {
+        mouthSprite.setTexture(mouthKey);
+      }
+      mouthSprite.setPosition(mouth.x, mouth.y);
+    } else {
+      const mouthSprite = scene.mouthSprites.get(player.id);
+      if (mouthSprite) {
+        mouthSprite.destroy();
+        scene.mouthSprites.delete(player.id);
+      }
+      graphics.fillStyle(0xffd86b, 0.35);
+      graphics.fillCircle(mouth.x, mouth.y, MOUTH_RADIUS);
+      graphics.lineStyle(2, 0xffd86b, 0.9);
+      graphics.strokeCircle(mouth.x, mouth.y, MOUTH_RADIUS);
+    }
+
+    const tip = tipPosition(player);
+    drawCone(graphics, tip, player.angle, CONE_RADIUS, CONE_HALF_ANGLE, 0x4b7867);
+  }
+
+  cleanupPlayerSprites(scene.playerSprites, seen);
+  cleanupPlayerSprites(scene.chopstickSprites, seen);
+  cleanupPlayerSprites(scene.mouthSprites, seen);
+}
+
+function cleanupPlayerSprites(map, seen) {
+  for (const [id, sprite] of map.entries()) {
+    if (!seen.has(id)) {
+      sprite.destroy();
+      map.delete(id);
+    }
+  }
+}
+
+function getFoodTextureKey(value) {
+  return FOOD_VALUE_TO_KEY.get(value) || "food_01";
 }
 
 function buildHud(players, state) {

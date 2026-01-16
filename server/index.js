@@ -18,20 +18,26 @@ const STATE_RATE = 30;
 const MOVE_SPEED = 220;
 const MAX_ANGULAR_SPEED = 4.5;
 const CHOPSTICK_LENGTH = 80;
-const CONE_RADIUS = 70;
-const CONE_HALF_ANGLE = Math.PI / 7;
-const MOUTH_RADIUS = 18;
-const EAT_TIME = 0.6;
+const CONE_RADIUS = 90;
+const CONE_HALF_ANGLE = Math.PI / 5;
+const MOUTH_RADIUS = 22;
+const EAT_TIME = 0.4;
 const MAX_FOOD = 8;
 const SPAWN_INTERVAL = 1.0;
-const GRAVITY = 520;
+const GRAVITY = 340;
 const MAX_FULLNESS = 100;
 
 const FOOD_TYPES = [
-  { name: "sushi", value: 10 },
-  { name: "dumpling", value: 14 },
-  { name: "noodle", value: 6 },
-  { name: "rice", value: 8 }
+  { name: "food_01", value: 4 },
+  { name: "food_02", value: 6 },
+  { name: "food_03", value: 8 },
+  { name: "food_04", value: 10 },
+  { name: "food_05", value: 12 },
+  { name: "food_06", value: 14 },
+  { name: "food_07", value: 16 },
+  { name: "food_08", value: 18 },
+  { name: "food_09", value: 20 },
+  { name: "food_10", value: 22 }
 ];
 
 const app = express();
@@ -80,7 +86,7 @@ function spawnFood() {
     id: room.nextFoodId++,
     x: 80 + Math.random() * (WIDTH - 160),
     y: -20,
-    vx: (Math.random() - 0.5) * 30,
+    vx: (Math.random() - 0.5) * 16,
     vy: 0,
     value: type.value,
     state: "free",
@@ -148,7 +154,7 @@ function updateFoods(dt) {
     if (food.y > HEIGHT + 60) {
       food.x = 80 + Math.random() * (WIDTH - 160);
       food.y = -20;
-      food.vx = (Math.random() - 0.5) * 30;
+      food.vx = (Math.random() - 0.5) * 16;
       food.vy = 0;
     }
   }
