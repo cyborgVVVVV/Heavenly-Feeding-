@@ -135,6 +135,10 @@ function initRoom() {
 }
 
 function updateReadyButton() {
+  if (serverState?.gameOver) {
+    readyBtn.textContent = localReady ? "取消再来一局" : "再来一局(就绪)";
+    return;
+  }
   readyBtn.textContent = localReady ? "取消就绪" : "点击就绪";
 }
 
@@ -172,6 +176,8 @@ function connect() {
         const winText =
           msg.loserId === localId ? "你被吃撑了！" : "对手被吃撑了！";
         statusEl.textContent = `比赛结束：${winText}`;
+        localReady = false;
+        updateReadyButton();
       } else {
         const readyCount = msg.players.filter((p) => p.ready).length;
         const hasOpponent =

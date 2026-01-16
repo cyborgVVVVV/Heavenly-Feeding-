@@ -228,6 +228,10 @@ function handleEating(room, dt) {
             (p) => p.id !== eater.id
           );
           room.winnerId = opponent ? opponent.id : null;
+          room.started = false;
+          for (const p of room.players.values()) {
+            p.ready = false;
+          }
         }
         return;
       }
