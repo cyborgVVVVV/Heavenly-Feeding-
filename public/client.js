@@ -34,14 +34,13 @@ let maxFullness = 100;
 
 const MOVE_SPEED = 220;
 const MAX_ANGULAR_SPEED = 4.5;
-const CHOPSTICK_LENGTH = 200;
+const BODY_SIZE = 139;
+const MOUTH_SIZE = 72;
+const CHOPSTICK_LENGTH = 181;
+const CHOPSTICK_DISPLAY_SCALE = 1.3;
 const CONE_RADIUS = 180;
 const CONE_HALF_ANGLE = Math.PI / 3;
 const MOUTH_RADIUS = 26;
-
-const BODY_SIZE = 139;
-const MOUTH_SIZE = 72;
-const CHOPSTICK_SCALE = 1.0;
 const BACKGROUND_ALPHA = 0.35;
 const TIP_MARKER_RADIUS = 7;
 
@@ -193,6 +192,7 @@ function create() {
   this.scale.on("resize", (gameSize) => {
     config.width = gameSize.width;
     config.height = gameSize.height;
+    this.cameras.main.setViewport(0, 0, gameSize.width, gameSize.height);
     if (this.backgroundSprite) {
       this.backgroundSprite.setDisplaySize(config.width, config.height);
     }
@@ -392,7 +392,9 @@ function renderPlayers(scene, graphics, overlay, players) {
       if (!chopstick) {
         chopstick = scene.add.image(player.x, player.y, chopstickKey);
         chopstick.setOrigin(0.1, 0.5);
-        chopstick.setScale(CHOPSTICK_SCALE);
+        const desiredLength = BODY_SIZE * CHOPSTICK_DISPLAY_SCALE;
+        const baseWidth = chopstick.width || 1;
+        chopstick.setScale(desiredLength / baseWidth);
         chopstick.setDepth(3);
         scene.chopstickSprites.set(player.id, chopstick);
       } else if (chopstick.texture.key !== chopstickKey) {
