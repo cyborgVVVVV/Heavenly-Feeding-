@@ -32,6 +32,12 @@ canvas {
   z-index: 10;
 }
 
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .title {
   font-size: 18px;
   letter-spacing: 1px;
@@ -82,4 +88,64 @@ canvas {
 #readyBtn[disabled] {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+#aboutBtn {
+  padding: 4px 8px;
+  font-size: 11px;
+  background: #1f2a36;
+  color: #f2e9d8;
+  border: 1px solid #3e5568;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.modal.hidden {
+  display: none;
+}
+
+.modalContent {
+  width: min(720px, 90vw);
+  max-height: 80vh;
+  background: #111820;
+  border: 1px solid #3e5568;
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+  color: #f2e9d8;
+}
+
+.modalHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.modalTitle {
+  font-size: 16px;
+  letter-spacing: 0.5px;
+}
+
+#aboutClose {
+  background: transparent;
+  border: none;
+  color: #f2e9d8;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.modalBody {
+  font-size: 13px;
+  line-height: 1.6;
 }

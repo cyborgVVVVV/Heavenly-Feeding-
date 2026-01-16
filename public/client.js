@@ -2,6 +2,9 @@ const statusEl = document.getElementById("status");
 const roomEl = document.getElementById("room");
 const inviteEl = document.getElementById("invite");
 const readyBtn = document.getElementById("readyBtn");
+const aboutBtn = document.getElementById("aboutBtn");
+const aboutModal = document.getElementById("aboutModal");
+const aboutClose = document.getElementById("aboutClose");
 
 const config = {
   type: Phaser.AUTO,
@@ -601,6 +604,20 @@ readyBtn.addEventListener("click", () => {
   localReady = !localReady;
   updateReadyButton();
   sendReady();
+});
+
+aboutBtn.addEventListener("click", () => {
+  aboutModal.classList.remove("hidden");
+});
+
+aboutClose.addEventListener("click", () => {
+  aboutModal.classList.add("hidden");
+});
+
+aboutModal.addEventListener("click", (event) => {
+  if (event.target === aboutModal) {
+    aboutModal.classList.add("hidden");
+  }
 });
 
 connect();

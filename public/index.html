@@ -9,7 +9,10 @@
   </head>
   <body>
     <div id="ui">
-      <div class="title">天堂投喂 Heavenly Feeding</div>
+      <div class="titleRow">
+        <div class="title">天堂投喂 Heavenly Feeding</div>
+        <button id="aboutBtn" type="button">about this game</button>
+      </div>
       <div class="tips">
         WASD 移动 · 鼠标指向调整筷子
       </div>
@@ -21,6 +24,22 @@
       </div>
     </div>
     <div id="game"></div>
+    <div id="aboutModal" class="modal hidden">
+      <div class="modalContent">
+        <div class="modalHeader">
+          <div class="modalTitle">About This Game</div>
+          <button id="aboutClose" type="button">×</button>
+        </div>
+        <div class="modalBody">
+          有一个人很想了解“天堂”与“地狱”究竟有什么不同?于是天使就带他去参观。<br />
+          先来到地狱参观。在地狱里看到一张很长的餐桌，桌上摆满了丰盛的美味佳肴。地狱的生活看起来还不错嘛，这个人自言自语道。用餐的时间到了，只见一群瘦骨如柴、愁眉苦脸的饿鬼鱼贯入座，每个人手上都拿着一双长长的筷子，夹到菜往自己嘴里放，可是筷子实在是太长了，吃不到嘴里，菜撒了一桌，一片狼藉。这个人看完，心里说:难怪他们都骨瘦如柴，一桌子的饭菜都吃不到嘴里，很悲惨啊!<br />
+          天使说，来，我再带你到天堂看看。到了天堂，同样的长餐桌，同样的美味佳肴，每个人手上同样拿一双长长的筷子。这个人马上说，天堂和地狱一样啊!天使说:你继续看下去。他仔细一看，围着餐桌吃饭的人个个红光满面、精神饱满。再接着看，发现不同了，每个人拿着长长的筷子，夹起菜不是往自己嘴里放，而是喂给对面桌子的人，最后每个人都吃的饱饱的，都很开心。这个人看完，感叹说:难怪天堂的人个个红光满面、精神饱满，他们都是在喂饱别人的同时，自己也吃的饱饱的。<br />
+          这个故事告诉我们，天堂和地狱的区别，就在于一个人的内心。内心是善良的，就在天堂;反过来，内心是自私的，那就是在地狱。<br />
+          但是， 即使是在天堂的善良的人们，也不要吃太多哦～<br />
+          有事务合作联系微信wyh041118
+        </div>
+      </div>
+    </div>
     <script src="/client.js"></script>
   </body>
 </html>
