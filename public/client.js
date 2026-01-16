@@ -72,6 +72,20 @@ const FOOD_VALUE_TO_KEY = new Map([
   [22, "food_10"]
 ]);
 
+const FOOD_VALUE_TO_SCALE = new Map([
+  [4, 1.6],
+  [6, 1.7],
+  [8, 1.8],
+  [10, 1.9],
+  [12, 2.0],
+  [14, 2.1],
+  [16, 2.2],
+  [18, 2.3],
+  [20, 2.4],
+  [22, 2.5]
+]);
+const FOOD_BASE_SIZE = 22;
+
 function normalize(x, y) {
   const len = Math.hypot(x, y);
   if (len === 0) return { x: 0, y: 0 };
@@ -332,12 +346,15 @@ function renderFoods(scene, graphics, players, foods) {
       let sprite = scene.foodSprites.get(food.id);
       if (!sprite) {
         sprite = scene.add.image(food.x, food.y, textureKey);
-        sprite.setDisplaySize(22, 22);
+        const size = FOOD_BASE_SIZE * getFoodScale(food.value);
+        sprite.setDisplaySize(size, size);
         sprite.setDepth(2);
         scene.foodSprites.set(food.id, sprite);
       } else if (sprite.texture.key !== textureKey) {
         sprite.setTexture(textureKey);
       }
+      const size = FOOD_BASE_SIZE * getFoodScale(food.value);
+      sprite.setDisplaySize(size, size);
       sprite.setPosition(food.x, food.y);
     } else {
       const sprite = scene.foodSprites.get(food.id);
@@ -471,6 +488,10 @@ function cleanupPlayerSprites(map, seen) {
 
 function getFoodTextureKey(value) {
   return FOOD_VALUE_TO_KEY.get(value) || "food_01";
+}
+
+function getFoodScale(value) {
+  return FOOD_VALUE_TO_SCALE.get(value) || 2.0;
 }
 
 function buildHud(players, state) {
