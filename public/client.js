@@ -343,6 +343,7 @@ function renderPlayers(scene, graphics, players) {
   for (const player of players) {
     seen.add(player.id);
     const keys = PLAYER_TEXTURE_KEYS[player.side];
+    const facingRight = Math.cos(player.angle) >= 0;
     const bodyKey = keys?.body;
     const chopstickKey = keys?.chopstick;
     const mouthKey = player.mouthOpen ? keys?.mouthOpen : keys?.mouthClosed;
@@ -361,6 +362,7 @@ function renderPlayers(scene, graphics, players) {
         body.setTexture(bodyKey);
       }
       body.setPosition(player.x, player.y);
+      body.setFlipX(!facingRight);
     } else {
       const body = scene.playerSprites.get(player.id);
       if (body) {
@@ -411,6 +413,7 @@ function renderPlayers(scene, graphics, players) {
         mouthSprite.setTexture(mouthKey);
       }
       mouthSprite.setPosition(mouth.x, mouth.y);
+      mouthSprite.setFlipX(!facingRight);
     } else {
       const mouthSprite = scene.mouthSprites.get(player.id);
       if (mouthSprite) {
