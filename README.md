@@ -100,6 +100,45 @@
 
 ---
 
+## 八、运行与联机
+
+### 本地运行
+
+```bash
+npm install
+npm start
+```
+
+浏览器打开 `http://localhost:3000`。
+
+### 邀请朋友联机（房间 + 就绪）
+
+打开页面后会自动生成房间参数 `?room=xxxx`，把当前浏览器地址发给朋友。  
+两人进入后点击“就绪”，双方就绪才会开始游戏。
+
+### 公网分享（ngrok，免费）
+
+1) 安装 ngrok
+```bash
+brew install ngrok/ngrok/ngrok
+```
+
+2) 配置 Authtoken（仅一次）
+```bash
+ngrok config add-authtoken <你的token>
+```
+
+3) 运行服务并开启隧道
+```bash
+npm start
+ngrok http 3000
+```
+
+ngrok 会输出一个 `https://xxxx.ngrok-free.app` 的公网链接，把它发给朋友即可。  
+注意：ngrok 免费链接每次启动都会变化。
+
+---
+
 ## 六、美术与调试
 
 * 风格：**日本浮世绘**
