@@ -189,6 +189,17 @@ function create() {
     release: "SPACE"
   });
   this.input.on("pointermove", () => {});
+  const resizeToWindow = () => {
+    this.scale.resize(window.innerWidth, window.innerHeight);
+    this.cameras.main.setViewport(0, 0, window.innerWidth, window.innerHeight);
+    config.width = window.innerWidth;
+    config.height = window.innerHeight;
+    if (this.backgroundSprite) {
+      this.backgroundSprite.setDisplaySize(config.width, config.height);
+    }
+  };
+  resizeToWindow();
+  window.addEventListener("resize", resizeToWindow);
   this.scale.on("resize", (gameSize) => {
     config.width = gameSize.width;
     config.height = gameSize.height;
@@ -441,15 +452,7 @@ function renderPlayers(scene, graphics, overlay, players) {
       graphics.strokeCircle(mouth.x, mouth.y, MOUTH_RADIUS);
     }
 
-    const tip = tipPosition(player);
-    overlay.lineStyle(3, 0xf2e9d8, 0.6);
-    overlay.beginPath();
-    overlay.moveTo(player.x, player.y);
-    overlay.lineTo(tip.x, tip.y);
-    overlay.strokePath();
-    drawCone(overlay, tip, player.angle, CONE_RADIUS, CONE_HALF_ANGLE, 0x4b7867);
-    overlay.fillStyle(0xfff1b8, 0.9);
-    overlay.fillCircle(tip.x, tip.y, TIP_MARKER_RADIUS);
+    // Debug overlays removed for clean presentation.
   }
 
   cleanupPlayerSprites(scene.playerSprites, seen);
