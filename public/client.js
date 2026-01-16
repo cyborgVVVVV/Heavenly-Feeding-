@@ -1,4 +1,7 @@
 const statusEl = document.getElementById("status");
+const roomEl = document.getElementById("room");
+const inviteEl = document.getElementById("invite");
+const readyBtn = document.getElementById("readyBtn");
 
 const config = {
   type: Phaser.AUTO,
@@ -27,6 +30,8 @@ let game;
 let socket;
 let localId = null;
 let localSide = null;
+let roomId = null;
+let localReady = false;
 let serverState = null;
 let predictedPlayer = null;
 let lastInputSent = 0;
@@ -117,12 +122,32 @@ function mouthPosition(player) {
   return { x: player.x, y: player.y - BODY_SIZE * offsetMult };
 }
 
+function initRoom() {
+  const url = new URL(window.location.href);
+  roomId = url.searchParams.get("room");
+  if (!roomId) {
+    roomId = Math.random().toString(36).slice(2, 8);
+    url.searchParams.set("room", roomId);
+    window.history.replaceState(null, "", url.toString());
+  }
+  roomEl.textContent = `房间：${roomId}`;
+  inviteEl.textContent = `邀请链接：${url.toString()}`;
+}
+
+function updateReadyButton() {
+  readyBtn.textContent = localReady ? "取消就绪" : "点击就绪";
+}
+
 function connect() {
   const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-  socket = new WebSocket(`${protocol}://${window.location.host}`);
+  socket = new WebSocket(
+    `${protocol}://${window.location.host}?room=${roomId}`
+  );
+  readyBtn.disabled = true;
 
   socket.addEventListener("open", () => {
     statusEl.textContent = "等待玩家加入...";
+    readyBtn.disabled = false;
   });
 
   socket.addEventListener("message", (event) => {
@@ -130,6 +155,10 @@ function connect() {
     if (msg.type === "welcome") {
       localId = msg.id;
       localSide = msg.side;
+      if (msg.roomId) {
+        roomId = msg.roomId;
+        roomEl.textContent = `房间：${roomId}`;
+      }
       maxFullness = msg.config.maxFullness;
       if (!game) {
         config.width = msg.config.width;
@@ -144,9 +173,16 @@ function connect() {
           msg.loserId === localId ? "你被吃撑了！" : "对手被吃撑了！";
         statusEl.textContent = `比赛结束：${winText}`;
       } else {
+        const readyCount = msg.players.filter((p) => p.ready).length;
         const hasOpponent =
           msg.players.filter((player) => player.id !== localId).length > 0;
-        statusEl.textContent = hasOpponent ? "战斗中" : "等待玩家加入...";
+        if (!hasOpponent) {
+          statusEl.textContent = "等待玩家加入...";
+        } else if (!msg.started) {
+          statusEl.textContent = `等待就绪 (${readyCount}/2)`;
+        } else {
+          statusEl.textContent = "战斗中";
+        }
       }
     }
     if (msg.type === "full") {
@@ -305,6 +341,16 @@ function sendInput(time, move, aim, release) {
       move: { x: move.x, y: move.y },
       aim,
       release
+    })
+  );
+}
+
+function sendReady() {
+  if (!socket || socket.readyState !== WebSocket.OPEN) return;
+  socket.send(
+    JSON.stringify({
+      type: "ready",
+      ready: localReady
     })
   );
 }
@@ -541,5 +587,14 @@ function drawCone(graphics, origin, angle, radius, halfAngle, color) {
   graphics.lineStyle(1, color, 0.25);
   graphics.strokeCircle(origin.x, origin.y, radius);
 }
+
+initRoom();
+updateReadyButton();
+readyBtn.addEventListener("click", () => {
+  if (readyBtn.disabled) return;
+  localReady = !localReady;
+  updateReadyButton();
+  sendReady();
+});
 
 connect();

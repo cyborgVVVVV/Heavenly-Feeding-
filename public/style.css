@@ -29,7 +29,6 @@ canvas {
   top: 12px;
   left: 16px;
   z-index: 10;
-  pointer-events: none;
 }
 
 .title {
@@ -47,4 +46,29 @@ canvas {
   margin-top: 6px;
   font-size: 13px;
   color: #ffd86b;
+}
+
+#room,
+#invite {
+  margin-top: 6px;
+  font-size: 12px;
+  opacity: 0.8;
+  max-width: 520px;
+  word-break: break-all;
+}
+
+#readyBtn {
+  margin-top: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #2a3a4a;
+  color: #f2e9d8;
+  border: 1px solid #3e5568;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+#readyBtn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

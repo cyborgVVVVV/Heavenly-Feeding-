@@ -50,16 +50,29 @@ app.use(express.static(PUBLIC_DIR));
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 
-const room = {
-  players: new Map(),
-  foods: [],
-  nextFoodId: 1,
-  lastSpawnTime: 0,
-  time: 0,
-  gameOver: false,
-  winnerId: null,
-  loserId: null
-};
+const rooms = new Map();
+
+function createRoom(roomId) {
+  return {
+    id: roomId,
+    players: new Map(),
+    foods: [],
+    nextFoodId: 1,
+    lastSpawnTime: 0,
+    time: 0,
+    gameOver: false,
+    winnerId: null,
+    loserId: null,
+    started: false
+  };
+}
+
+function getRoom(roomId) {
+  if (!rooms.has(roomId)) {
+    rooms.set(roomId, createRoom(roomId));
+  }
+  return rooms.get(roomId);
+}
 
 function normalize(x, y) {
   const len = Math.hypot(x, y);
@@ -84,7 +97,7 @@ function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
 }
 
-function spawnFood() {
+function spawnFood(room) {
   if (room.foods.length >= MAX_FOOD) return;
   const type = FOOD_TYPES[Math.floor(Math.random() * FOOD_TYPES.length)];
   const food = {
@@ -129,7 +142,7 @@ function isInCone(player, food) {
   return delta <= CONE_HALF_ANGLE;
 }
 
-function tryPickup(player) {
+function tryPickup(room, player) {
   if (player.holdingFoodId) return;
   const candidate = room.foods.find(
     (food) => food.state === "free" && isInCone(player, food)
@@ -141,7 +154,7 @@ function tryPickup(player) {
   player.holdingFoodId = candidate.id;
 }
 
-function releaseFood(player) {
+function releaseFood(room, player) {
   if (!player.holdingFoodId) return;
   const food = room.foods.find((f) => f.id === player.holdingFoodId);
   if (!food) {
@@ -155,7 +168,7 @@ function releaseFood(player) {
   player.holdingFoodId = null;
 }
 
-function updateFoods(dt) {
+function updateFoods(room, dt) {
   for (const food of room.foods) {
     if (food.state === "held") continue;
     food.vy += GRAVITY * dt;
@@ -170,7 +183,7 @@ function updateFoods(dt) {
   }
 }
 
-function updateHeldFoods() {
+function updateHeldFoods(room) {
   for (const player of room.players.values()) {
     if (!player.holdingFoodId) continue;
     const food = room.foods.find((f) => f.id === player.holdingFoodId);
@@ -186,7 +199,7 @@ function updateHeldFoods() {
   }
 }
 
-function handleEating(dt) {
+function handleEating(room, dt) {
   for (const food of room.foods) {
     for (const player of room.players.values()) {
       const opponentId = player.id;
@@ -222,7 +235,7 @@ function handleEating(dt) {
   }
 }
 
-function updatePlayers(dt) {
+function updatePlayers(room, dt) {
   for (const player of room.players.values()) {
     const input = player.input;
     const move = normalize(input.moveX, input.moveY);
@@ -236,31 +249,33 @@ function updatePlayers(dt) {
       player.targetAngle,
       MAX_ANGULAR_SPEED * dt
     );
-    if (input.release) releaseFood(player);
+    if (input.release) releaseFood(room, player);
     player.input.release = false;
   }
 }
 
-function tick() {
-  if (room.gameOver) return;
-  updatePlayers(DT);
+function tick(room) {
+  if (!room.started || room.gameOver) return;
+  updatePlayers(room, DT);
   for (const player of room.players.values()) {
-    tryPickup(player);
+    tryPickup(room, player);
   }
-  updateHeldFoods();
-  updateFoods(DT);
-  handleEating(DT);
+  updateHeldFoods(room);
+  updateFoods(room, DT);
+  handleEating(room, DT);
   room.time += DT;
   room.lastSpawnTime += DT;
   if (room.lastSpawnTime >= SPAWN_INTERVAL) {
     room.lastSpawnTime = 0;
-    spawnFood();
+    spawnFood(room);
   }
 }
 
-function broadcastState() {
+function broadcastState(room) {
   const payload = {
     type: "state",
+    roomId: room.id,
+    started: room.started,
     gameOver: room.gameOver,
     winnerId: room.winnerId,
     loserId: room.loserId || null,
@@ -272,6 +287,7 @@ function broadcastState() {
       angle: player.angle,
       fullness: player.fullness,
       mouthOpen: room.time < (player.mouthOpenUntil || 0),
+      ready: Boolean(player.ready),
       holdingFoodId: player.holdingFoodId
     })),
     foods: room.foods.map((food) => ({
@@ -291,31 +307,77 @@ function broadcastState() {
   }
 }
 
-function resetGameIfNeeded() {
+function resetGameIfNeeded(room) {
   if (room.players.size < 2) {
     room.gameOver = false;
     room.winnerId = null;
     room.loserId = null;
     room.time = 0;
+    room.started = false;
     room.foods = [];
     room.nextFoodId = 1;
+    for (const player of room.players.values()) {
+      player.ready = false;
+      player.holdingFoodId = null;
+    }
   }
 }
 
-function assignSide() {
+function assignSide(room) {
   const sides = Array.from(room.players.values()).map((p) => p.side);
   if (!sides.includes("left")) return "left";
   if (!sides.includes("right")) return "right";
   return null;
 }
 
-wss.on("connection", (ws) => {
+function allReady(room) {
+  if (room.players.size < 2) return false;
+  return Array.from(room.players.values()).every((player) => player.ready);
+}
+
+function startRoom(room) {
+  room.started = true;
+  room.gameOver = false;
+  room.winnerId = null;
+  room.loserId = null;
+  room.time = 0;
+  room.foods = [];
+  room.nextFoodId = 1;
+  room.lastSpawnTime = 0;
+  for (const player of room.players.values()) {
+    player.fullness = 0;
+    player.holdingFoodId = null;
+    player.mouthOpenUntil = 0;
+    player.input.moveX = 0;
+    player.input.moveY = 0;
+    player.input.release = false;
+    if (player.side === "left") {
+      player.x = 180;
+      player.y = HEIGHT / 2;
+      player.angle = 0;
+      player.targetAngle = 0;
+      player.input.aim = 0;
+    } else {
+      player.x = WIDTH - 180;
+      player.y = HEIGHT / 2;
+      player.angle = Math.PI;
+      player.targetAngle = Math.PI;
+      player.input.aim = Math.PI;
+    }
+  }
+}
+
+wss.on("connection", (ws, req) => {
+  const requestUrl = new URL(req.url, `http://${req.headers.host}`);
+  const roomId = requestUrl.searchParams.get("room") || "lobby";
+  const room = getRoom(roomId);
+
   if (room.players.size >= 2) {
     ws.send(JSON.stringify({ type: "full" }));
     ws.close();
     return;
   }
-  const side = assignSide();
+  const side = assignSide(room);
   if (!side) {
     ws.close();
     return;
@@ -331,6 +393,7 @@ wss.on("connection", (ws) => {
     fullness: 0,
     mouthOpenUntil: 0,
     holdingFoodId: null,
+    ready: false,
     input: {
       moveX: 0,
       moveY: 0,
@@ -339,12 +402,13 @@ wss.on("connection", (ws) => {
     }
   };
   room.players.set(player.id, player);
-  resetGameIfNeeded();
+  resetGameIfNeeded(room);
   ws.send(
     JSON.stringify({
       type: "welcome",
       id: player.id,
       side: player.side,
+      roomId: room.id,
       config: {
         width: WIDTH,
         height: HEIGHT,
@@ -361,10 +425,17 @@ wss.on("connection", (ws) => {
       return;
     }
     if (msg.type === "input") {
+      if (!room.started) return;
       player.input.moveX = Number(msg.move?.x) || 0;
       player.input.moveY = Number(msg.move?.y) || 0;
       player.input.aim = Number(msg.aim) || player.input.aim;
       player.input.release = Boolean(msg.release);
+    }
+    if (msg.type === "ready") {
+      player.ready = Boolean(msg.ready);
+      if (allReady(room)) {
+        startRoom(room);
+      }
     }
   });
 
@@ -377,18 +448,23 @@ wss.on("connection", (ws) => {
         food.heldBy = null;
       }
     }
-    resetGameIfNeeded();
+    resetGameIfNeeded(room);
+    if (room.players.size === 0) {
+      rooms.delete(roomId);
+    }
   });
 });
 
 setInterval(() => {
-  for (let i = 0; i < 1; i += 1) {
-    tick();
+  for (const room of rooms.values()) {
+    tick(room);
   }
 }, 1000 / TICK_RATE);
 
 setInterval(() => {
-  broadcastState();
+  for (const room of rooms.values()) {
+    broadcastState(room);
+  }
 }, 1000 / STATE_RATE);
 
 server.listen(PORT, () => {
