@@ -23,8 +23,8 @@ const CONE_HALF_ANGLE = Math.PI / 5;
 const MOUTH_RADIUS = 22;
 const EAT_TIME = 0.4;
 const MAX_FOOD = 8;
-const SPAWN_INTERVAL = 1.0;
-const GRAVITY = 340;
+const SPAWN_INTERVAL = 2.0;
+const GRAVITY = 170;
 const MAX_FULLNESS = 100;
 
 const FOOD_TYPES = [
