@@ -32,16 +32,16 @@ const GRAVITY = 170;
 const MAX_FULLNESS = 100;
 
 const FOOD_TYPES = [
-  { name: "food_01", value: 4 },
+  { name: "food_01", value: 6 },
   { name: "food_02", value: 6 },
-  { name: "food_03", value: 8 },
-  { name: "food_04", value: 10 },
-  { name: "food_05", value: 12 },
-  { name: "food_06", value: 14 },
-  { name: "food_07", value: 16 },
-  { name: "food_08", value: 18 },
-  { name: "food_09", value: 20 },
-  { name: "food_10", value: 22 }
+  { name: "food_03", value: 7 },
+  { name: "food_04", value: 8 },
+  { name: "food_05", value: 9 },
+  { name: "food_06", value: 10 },
+  { name: "food_07", value: 10 },
+  { name: "food_08", value: 11 },
+  { name: "food_09", value: 12 },
+  { name: "food_10", value: 13 }
 ];
 
 const app = express();
