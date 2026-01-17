@@ -329,7 +329,7 @@ function create() {
     this.backgroundSprite.setDepth(0);
   }
   this.uiText = this.add.text(16, 80, "", {
-    fontSize: "14px",
+    fontSize: "12px",
     color: "#f2e9d8"
   });
   this.cursors = this.input.keyboard.addKeys({
@@ -678,12 +678,7 @@ function buildHud(players, state) {
   const rightValue = right ? Math.min(right.fullness, maxFullness) : 0;
   const leftBar = makeBar(leftValue, maxFullness);
   const rightBar = makeBar(rightValue, maxFullness);
-  const status = state.gameOver
-    ? state.loserId === localId
-      ? "你被吃撑了"
-      : "对手被吃撑了"
-    : "对战中";
-  return `左侧饱腹 ${leftBar}  ${leftValue}/${maxFullness}\n右侧饱腹 ${rightBar}  ${rightValue}/${maxFullness}\n状态：${status}`;
+  return `左侧饱腹 ${leftBar}  ${leftValue}/${maxFullness}\n右侧饱腹 ${rightBar}  ${rightValue}/${maxFullness}`;
 }
 
 function makeBar(value, max) {
