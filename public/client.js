@@ -34,7 +34,6 @@ const config = {
   }
 };
 
-const WS_HOST = "ws.heavenlyfeeding.com";
 
 let game;
 let socket;
@@ -201,16 +200,9 @@ function connect() {
     clearTimeout(reconnectTimer);
     reconnectTimer = null;
   }
-  const isLocal =
-    window.location.hostname === "localhost" ||
-    window.location.hostname === "127.0.0.1";
-  const protocol = isLocal
-    ? window.location.protocol === "https:"
-      ? "wss"
-      : "ws"
-    : "wss";
+  const protocol = window.location.protocol === "https:" ? "wss" : "ws";
   socket = new WebSocket(
-    `${protocol}://${isLocal ? window.location.host : WS_HOST}?room=${roomId}`
+    `${protocol}://${window.location.host}?room=${roomId}`
   );
   readyBtn.disabled = true;
   updateDebugInfo();
