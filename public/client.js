@@ -734,4 +734,6 @@ aboutModal.addEventListener("click", (event) => {
   }
 });
 
+aboutModal.classList.remove("hidden");
+
 connect();
