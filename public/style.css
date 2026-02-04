@@ -168,3 +168,60 @@ canvas {
   font-size: 13px;
   line-height: 1.6;
 }
+
+#mobileControls {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+}
+
+#motionHint {
+  position: absolute;
+  left: 16px;
+  top: 70px;
+  pointer-events: auto;
+}
+
+#motionBtn {
+  padding: 6px 10px;
+  font-size: 12px;
+  background: #2a3a4a;
+  color: #f2e9d8;
+  border: 1px solid #3e5568;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+#aimPad {
+  position: absolute;
+  right: 18px;
+  bottom: 18px;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  border: 2px solid rgba(242, 233, 216, 0.6);
+  background: rgba(15, 18, 22, 0.35);
+  pointer-events: auto;
+  touch-action: none;
+}
+
+#aimStick {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 44px;
+  height: 44px;
+  margin-left: -22px;
+  margin-top: -22px;
+  border-radius: 50%;
+  background: rgba(242, 233, 216, 0.8);
+  box-shadow: 0 0 0 2px rgba(62, 85, 104, 0.6);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  #mobileControls {
+    display: none;
+  }
+}

@@ -7,6 +7,9 @@ const newRoomBtn = document.getElementById("newRoomBtn");
 const aboutBtn = document.getElementById("aboutBtn");
 const aboutModal = document.getElementById("aboutModal");
 const aboutClose = document.getElementById("aboutClose");
+const aimPad = document.getElementById("aimPad");
+const aimStick = document.getElementById("aimStick");
+const motionBtn = document.getElementById("motionBtn");
 
 const VIRTUAL_WIDTH = 960;
 const VIRTUAL_HEIGHT = 540;
@@ -48,6 +51,10 @@ let maxFullness = 100;
 let texturesEnabled = true;
 let reconnectTimer = null;
 let reconnectAttempts = 0;
+let aimActive = false;
+let aimAngle = 0;
+let motionEnabled = false;
+let motionVector = { x: 0, y: 0 };
 
 const MOVE_SPEED = 220;
 const MAX_ANGULAR_SPEED = 4.5;
@@ -192,6 +199,37 @@ function updateDebugInfo() {
     `状态: ${socketState}\n` +
     `房间: ${roomId || "-"} | 本地ID: ${localId || "-"}\n` +
     `玩家: ${playerCount} (${playerList})`;
+}
+
+function setAimStickPosition(dx, dy, radius) {
+  const clampedLen = Math.min(radius, Math.hypot(dx, dy));
+  const angle = Math.atan2(dy, dx);
+  const x = Math.cos(angle) * clampedLen;
+  const y = Math.sin(angle) * clampedLen;
+  aimStick.style.transform = `translate(${x}px, ${y}px)`;
+  aimAngle = Math.atan2(y, x);
+}
+
+function resetAimStick() {
+  aimStick.style.transform = "translate(0px, 0px)";
+}
+
+function enableMotion() {
+  motionEnabled = true;
+  if (motionBtn) motionBtn.style.display = "none";
+}
+
+function handleMotion(event) {
+  const beta = event.beta ?? 0;
+  const gamma = event.gamma ?? 0;
+  const x = Math.max(-1, Math.min(1, gamma / 25));
+  const y = Math.max(-1, Math.min(1, beta / 25));
+  const len = Math.hypot(x, y);
+  if (len < 0.15) {
+    motionVector = { x: 0, y: 0 };
+    return;
+  }
+  motionVector = { x: x / len, y: y / len };
 }
 
 function connect() {
@@ -422,12 +460,14 @@ function update(time, delta) {
 }
 
 function getMoveInput(keys) {
+  if (motionEnabled) return motionVector;
   const x = (keys.right.isDown ? 1 : 0) - (keys.left.isDown ? 1 : 0);
   const y = (keys.down.isDown ? 1 : 0) - (keys.up.isDown ? 1 : 0);
   return normalize(x, y);
 }
 
 function getAimAngle(scene, player) {
+  if (aimActive) return aimAngle;
   const pointer = scene.input.activePointer;
   const worldPoint = scene.cameras.main.getWorldPoint(pointer.x, pointer.y);
   return Math.atan2(worldPoint.y - player.y, worldPoint.x - player.x);
@@ -735,5 +775,56 @@ aboutModal.addEventListener("click", (event) => {
 });
 
 aboutModal.classList.remove("hidden");
+
+if (motionBtn && typeof DeviceOrientationEvent !== "undefined") {
+  motionBtn.addEventListener("click", async () => {
+    if (typeof DeviceOrientationEvent.requestPermission === "function") {
+      try {
+        const res = await DeviceOrientationEvent.requestPermission();
+        if (res === "granted") enableMotion();
+      } catch (error) {
+        // ignore
+      }
+    } else {
+      enableMotion();
+    }
+  });
+}
+
+if (typeof window !== "undefined") {
+  window.addEventListener("deviceorientation", (event) => {
+    if (!motionEnabled) return;
+    handleMotion(event);
+  });
+}
+
+if (aimPad) {
+  const padRadius = 48;
+  const handlePointer = (event) => {
+    const rect = aimPad.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = event.clientX - centerX;
+    const dy = event.clientY - centerY;
+    aimActive = true;
+    setAimStickPosition(dx, dy, padRadius);
+  };
+
+  aimPad.addEventListener("pointerdown", (event) => {
+    aimPad.setPointerCapture(event.pointerId);
+    handlePointer(event);
+  });
+  aimPad.addEventListener("pointermove", (event) => {
+    if (!aimActive) return;
+    handlePointer(event);
+  });
+  const endAim = () => {
+    aimActive = false;
+    resetAimStick();
+  };
+  aimPad.addEventListener("pointerup", endAim);
+  aimPad.addEventListener("pointercancel", endAim);
+  aimPad.addEventListener("pointerleave", endAim);
+}
 
 connect();
